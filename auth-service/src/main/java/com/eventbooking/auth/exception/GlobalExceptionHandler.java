@@ -58,12 +58,6 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(HttpStatus.UNAUTHORIZED.value()).body(response);
 	}
 
-	@ExceptionHandler(DuplicateEventException.class)
-	public ResponseEntity<ApiResponse<Void>> handleDuplicateEventException(DuplicateEventException ex) {
-
-		ApiResponse<Void> response = new ApiResponse<>(false, HttpStatus.CONFLICT.value(), ex.getMessage(), null);
-
-		return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
-	}
+	
 
 }
