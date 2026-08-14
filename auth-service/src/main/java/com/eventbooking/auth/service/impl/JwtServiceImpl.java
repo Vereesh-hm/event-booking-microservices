@@ -31,8 +31,14 @@ public class JwtServiceImpl implements JwtService {
 	@Override
 	public String generateToken(User user) {
 
-		return Jwts.builder().subject(user.getEmail()).issuedAt(new Date())
+		return Jwts.builder().subject(user.getEmail()).claim("role", user.getRole().name()).issuedAt(new Date())
 				.expiration(new Date(System.currentTimeMillis() + expiration)).signWith(getSigningKey()).compact();
+	}
+
+	@Override
+	public String extractRole(String token) {
+
+		return extractAllClaims(token).get("role", String.class);
 	}
 
 	private Claims extractAllClaims(String token) {

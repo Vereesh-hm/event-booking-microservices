@@ -11,4 +11,6 @@ public interface JwtService {
 	boolean isTokenValid(String token, User user);
 	
 	long getExpirationInSeconds();
+	
+	String extractRole(String token);
 }
