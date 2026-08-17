@@ -2,12 +2,13 @@ package com.eventbooking.event.controller;
 
 import java.util.UUID;
 
-import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,6 +18,7 @@ import com.eventbooking.event.dto.ApiResponse;
 import com.eventbooking.event.dto.CreateEventRequest;
 import com.eventbooking.event.dto.EventPageResponse;
 import com.eventbooking.event.dto.EventResponse;
+import com.eventbooking.event.dto.UpdateEventRequest;
 import com.eventbooking.event.service.EventService;
 
 import jakarta.validation.Valid;
@@ -51,16 +53,30 @@ public class EventController {
 
 	@GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<ApiResponse<EventPageResponse>> getAllEvents(
-	        @RequestParam(name = "page", defaultValue = "0") int page,
-	        @RequestParam(name = "size", defaultValue = "10") int size,
-	        @RequestParam(name = "sortBy", defaultValue = "eventDate") String sortBy,
-	        @RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection) {
+			@RequestParam(name = "page", defaultValue = "0") int page,
+			@RequestParam(name = "size", defaultValue = "10") int size,
+			@RequestParam(name = "sortBy", defaultValue = "eventDate") String sortBy,
+			@RequestParam(name = "sortDirection", defaultValue = "asc") String sortDirection) {
 
-	    ApiResponse<EventPageResponse> response =
-	            eventService.getAllEvents(page, size, sortBy, sortDirection);
+		ApiResponse<EventPageResponse> response = eventService.getAllEvents(page, size, sortBy, sortDirection);
 
-	    return ResponseEntity
-	            .status(response.getStatusCode())
-	            .body(response);
+		return ResponseEntity.status(response.getStatusCode()).body(response);
+	}
+
+	@PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<ApiResponse<EventResponse>> updateEvent(@PathVariable("id") UUID id,
+			@Valid @RequestBody UpdateEventRequest request) {
+
+		ApiResponse<EventResponse> response = eventService.updateEvent(id, request);
+
+		return ResponseEntity.status(response.getStatusCode()).body(response);
+	}
+
+	@DeleteMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<ApiResponse<Void>> deleteEvent(@PathVariable("id") UUID id) {
+
+		ApiResponse<Void> response = eventService.deleteEvent(id);
+
+		return ResponseEntity.status(response.getStatusCode()).body(response);
 	}
 }

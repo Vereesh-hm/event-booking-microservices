@@ -3,6 +3,7 @@ package com.eventbooking.event.serviceImpl;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -17,8 +18,11 @@ import com.eventbooking.event.dto.ApiResponse;
 import com.eventbooking.event.dto.CreateEventRequest;
 import com.eventbooking.event.dto.EventPageResponse;
 import com.eventbooking.event.dto.EventResponse;
+import com.eventbooking.event.dto.UpdateEventRequest;
 import com.eventbooking.event.entity.Event;
 import com.eventbooking.event.exception.DuplicateEventException;
+import com.eventbooking.event.exception.EventAlreadyBookedException;
+import com.eventbooking.event.exception.EventAlreadyExistsException;
 import com.eventbooking.event.exception.EventNotFoundException;
 import com.eventbooking.event.exception.InvalidEventQueryException;
 import com.eventbooking.event.repository.EventRepository;
@@ -144,5 +148,81 @@ public class EventServiceImpl implements EventService {
 				events.getTotalElements());
 
 		return new ApiResponse<>(true, HttpStatus.OK.value(), "Events fetched successfully", eventPageResponse);
+	}
+
+	@Override
+	@Transactional
+	public ApiResponse<EventResponse> updateEvent(UUID id, UpdateEventRequest request) {
+
+		Event event = eventRepository.findById(id).orElseThrow(() -> {
+			log.warn("Event details not found for id: {}", id);
+
+			return new EventNotFoundException("Event details not found for the given id");
+		});
+
+		int bookedSeats = event.getTotalSeats() - event.getAvailableSeats();
+
+		if (request.totalSeats() < bookedSeats) {
+
+			log.warn(
+					"Cannot reduce total seats below already booked seats. "
+							+ "eventId: {}, bookedSeats: {}, requestedTotalSeats: {}",
+					id, bookedSeats, request.totalSeats());
+
+			throw new InvalidEventQueryException(
+					"Total seats cannot be less than already booked seats: " + bookedSeats);
+		}
+
+		Optional<Event> duplicateEvent = eventRepository.findByTitleAndLocationAndEventDate(request.title(),
+				request.location(), request.eventDate());
+
+		if (duplicateEvent.isPresent() && !duplicateEvent.get().getId().equals(id)) {
+
+			throw new EventAlreadyExistsException(
+					"Another event already exists with the same title, location and event date");
+		}
+
+		event.setTitle(request.title());
+		event.setDescription(request.description());
+		event.setLocation(request.location());
+		event.setEventDate(request.eventDate());
+		event.setTotalSeats(request.totalSeats());
+
+		event.setAvailableSeats(request.totalSeats() - bookedSeats);
+
+		Event updatedEvent = eventRepository.save(event);
+
+		EventResponse eventResponse = mapToEventResponse(updatedEvent);
+
+		log.info("Event updated successfully for id: {}", id);
+
+		return new ApiResponse<>(true, HttpStatus.OK.value(), "Event updated successfully", eventResponse);
+	}
+
+	@Override
+	@Transactional
+	public ApiResponse<Void> deleteEvent(UUID id) {
+
+		Event event = eventRepository.findById(id).orElseThrow(() -> {
+			log.warn("Event details not found for id: {}", id);
+
+			return new EventNotFoundException("Event details not found for the given id");
+		});
+
+		int bookedSeats = event.getTotalSeats() - event.getAvailableSeats();
+
+		if (bookedSeats > 0) {
+
+			log.warn("Cannot delete event because seats are already booked. " + "eventId: {}, bookedSeats: {}", id,
+					bookedSeats);
+
+			throw new EventAlreadyBookedException("Event cannot be deleted because seats are already booked");
+		}
+
+		eventRepository.delete(event);
+
+		log.info("Event deleted successfully for id: {}", id);
+
+		return new ApiResponse<>(true, HttpStatus.OK.value(), "Event deleted successfully", null);
 	}
 }
