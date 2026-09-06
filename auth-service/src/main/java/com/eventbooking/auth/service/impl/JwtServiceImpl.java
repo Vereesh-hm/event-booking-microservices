@@ -12,6 +12,7 @@ import com.eventbooking.auth.entity.User;
 import com.eventbooking.auth.service.JwtService;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
@@ -61,12 +62,26 @@ public class JwtServiceImpl implements JwtService {
 		return extractExpiration(token).before(new Date());
 	}
 
+//	@Override
+//	public boolean isTokenValid(String token, User user) {
+//
+//		String username = extractUsername(token);
+//
+//		return username.equals(user.getEmail()) && !isTokenExpired(token);
+//	}
 	@Override
 	public boolean isTokenValid(String token, User user) {
 
-		String username = extractUsername(token);
+		try {
 
-		return username.equals(user.getEmail()) && !isTokenExpired(token);
+			String username = extractUsername(token);
+
+			return username.equals(user.getEmail());
+
+		} catch (JwtException e) {
+
+			return false;
+		}
 	}
 
 	@Override
