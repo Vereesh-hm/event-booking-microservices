@@ -5,6 +5,8 @@ import java.util.Date;
 
 import javax.crypto.SecretKey;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +19,9 @@ public class JwtServiceImpl implements JwtService {
 
 	@Value("${jwt.secret}")
 	private String secret;
+	
+	private static final Logger log =
+	        LoggerFactory.getLogger(JwtServiceImpl.class);
 
 	private SecretKey getSigningKey() {
 
@@ -52,8 +57,11 @@ public class JwtServiceImpl implements JwtService {
 			return expiration != null && expiration.after(new Date());
 
 		} catch (Exception e) {
+		    log.error("JWT validation failed: {} - {}",
+		            e.getClass().getSimpleName(),
+		            e.getMessage());
 
-			return false;
+		    return false;
 		}
 	}
 }

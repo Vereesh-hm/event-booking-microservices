@@ -3,6 +3,8 @@ package com.eventbooking.event.security;
 import java.io.IOException;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,6 +22,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 	private final JwtService jwtService;
 
+	private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
+
 	public JwtAuthenticationFilter(JwtService jwtService) {
 		this.jwtService = jwtService;
 	}
@@ -30,6 +34,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 		String authorizationHeader = request.getHeader("Authorization");
 
+		log.info("Incoming request: {} {}", request.getMethod(), request.getRequestURI());
+
+		log.info("Authorization header present: {}", authorizationHeader != null);
+
+		log.info("Authorization format valid: {}",
+				authorizationHeader != null && authorizationHeader.startsWith("Bearer "));
+
+		log.info("Incoming JWT fingerprint: {}", getTokenFingerprint(authorizationHeader));
+
 		if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
 
 			filterChain.doFilter(request, response);
@@ -38,12 +51,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 		String token = authorizationHeader.substring(7);
 
-		if (!jwtService.isTokenValid(token)) {
+		boolean valid = jwtService.isTokenValid(token);
 
+		log.info("JWT validation result: {}", valid);
+
+		if (!valid) {
+			log.warn("JWT validation failed");
 			filterChain.doFilter(request, response);
 			return;
 		}
-
 		try {
 
 			String username = jwtService.extractUsername(token);
@@ -62,8 +78,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 			// Invalid token/claims.
 			// Continue without authentication.
+			log.error("Error while processing JWT claims", e);
+			SecurityContextHolder.clearContext();
 		}
 
 		filterChain.doFilter(request, response);
 	}
+
+	private String getTokenFingerprint(String authorizationHeader) {
+		try {
+			if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+				return "INVALID_HEADER";
+			}
+
+			String token = authorizationHeader.substring(7);
+
+			byte[] hash = java.security.MessageDigest.getInstance("SHA-256")
+					.digest(token.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+			return java.util.HexFormat.of().formatHex(hash).substring(0, 16);
+
+		} catch (Exception e) {
+			return "FINGERPRINT_ERROR";
+		}
+	}
+
 }

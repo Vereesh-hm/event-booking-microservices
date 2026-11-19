@@ -37,7 +37,12 @@ public class SecurityConfig {
 						// can view events
 						.requestMatchers(HttpMethod.GET, "/api/events/**").hasAnyRole("USER", "ADMIN")
 
-						// Only ADMIN can create
+						// USER and ADMIN can reserve seats
+						.requestMatchers(HttpMethod.POST, "/api/events/*/reserve-seats").hasAnyRole("USER", "ADMIN")
+
+						.requestMatchers(HttpMethod.POST, "/api/events/*/release-seats").hasAnyRole("USER", "ADMIN")
+
+						// Only ADMIN can create events
 						.requestMatchers(HttpMethod.POST, "/api/events/**").hasRole("ADMIN")
 
 						// Only ADMIN can update

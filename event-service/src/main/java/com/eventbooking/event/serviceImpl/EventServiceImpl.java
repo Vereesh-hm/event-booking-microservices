@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.eventbooking.event.dto.ApiResponse;
 import com.eventbooking.event.dto.CreateEventRequest;
@@ -224,5 +225,37 @@ public class EventServiceImpl implements EventService {
 		log.info("Event deleted successfully for id: {}", id);
 
 		return new ApiResponse<>(true, HttpStatus.OK.value(), "Event deleted successfully", null);
+	}
+
+	@Override
+	@Transactional
+	public void reserveSeats(UUID eventId, Integer numberOfSeats) {
+
+		int updatedRows = eventRepository.reserveSeats(eventId, numberOfSeats);
+
+		if (updatedRows == 0) {
+
+			if (!eventRepository.existsById(eventId)) {
+				throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Event not found");
+			}
+
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Insufficient seats available");
+		}
+	}
+
+	@Override
+	@Transactional
+	public void releaseSeats(UUID eventId, Integer numberOfSeats) {
+
+		int updatedRows = eventRepository.releaseSeats(eventId, numberOfSeats);
+
+		if (updatedRows == 0) {
+
+			if (!eventRepository.existsById(eventId)) {
+				throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Event not found");
+			}
+
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Unable to release seats");
+		}
 	}
 }

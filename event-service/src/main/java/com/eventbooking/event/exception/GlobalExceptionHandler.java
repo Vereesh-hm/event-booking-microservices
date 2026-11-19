@@ -11,6 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.eventbooking.event.dto.ApiResponse;
 
@@ -19,6 +20,20 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+	@ExceptionHandler(ResponseStatusException.class)
+	public ResponseEntity<ApiResponse<Void>> handleResponseStatusException(ResponseStatusException ex) {
+
+		HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
+
+		String message = ex.getReason() != null ? ex.getReason() : status.getReasonPhrase();
+
+		log.warn("Request failed with status {}: {}", status.value(), message);
+
+		ApiResponse<Void> response = new ApiResponse<>(false, status.value(), message, null);
+
+		return ResponseEntity.status(status).body(response);
+	}
 
 	@ExceptionHandler(DuplicateEventException.class)
 	public ResponseEntity<ApiResponse<Void>> handleDuplicateEventException(DuplicateEventException ex) {

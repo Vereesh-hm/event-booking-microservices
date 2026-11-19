@@ -1,5 +1,6 @@
 package com.eventbooking.event.controller;
 
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.http.MediaType;
@@ -18,6 +19,8 @@ import com.eventbooking.event.dto.ApiResponse;
 import com.eventbooking.event.dto.CreateEventRequest;
 import com.eventbooking.event.dto.EventPageResponse;
 import com.eventbooking.event.dto.EventResponse;
+import com.eventbooking.event.dto.ReleaseSeatsRequest;
+import com.eventbooking.event.dto.ReserveSeatsRequest;
 import com.eventbooking.event.dto.UpdateEventRequest;
 import com.eventbooking.event.service.EventService;
 
@@ -78,5 +81,22 @@ public class EventController {
 		ApiResponse<Void> response = eventService.deleteEvent(id);
 
 		return ResponseEntity.status(response.getStatusCode()).body(response);
+	}
+
+	@PostMapping("/{eventId}/reserve-seats")
+	public ResponseEntity<Map<String, String>> reserveSeats(@PathVariable("eventId") UUID eventId,
+			@Valid @RequestBody ReserveSeatsRequest request) {
+
+		eventService.reserveSeats(eventId, request.getNumberOfSeats());
+
+		return ResponseEntity.ok(Map.of("message", "Seats reserved successfully"));
+	}
+
+	@PostMapping("/{eventId}/release-seats")
+	public ResponseEntity<?> releaseSeats(@PathVariable("eventId") UUID eventId, @Valid @RequestBody ReleaseSeatsRequest request) {
+
+		eventService.releaseSeats(eventId, request.getNumberOfSeats());
+
+		return ResponseEntity.ok(Map.of("message", "Seats released successfully"));
 	}
 }

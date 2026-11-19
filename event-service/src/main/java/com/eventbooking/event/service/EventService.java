@@ -19,4 +19,9 @@ public interface EventService {
 	ApiResponse<EventResponse> updateEvent(UUID id, UpdateEventRequest request);
 
 	ApiResponse<Void> deleteEvent(UUID id);
+	
+	
+	void reserveSeats(UUID eventId, Integer numberOfSeats);
+	
+	void releaseSeats(UUID eventId, Integer numberOfSeats);
 }
